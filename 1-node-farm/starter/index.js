@@ -1,5 +1,7 @@
 const fs = require('fs')
 const http = require('http');
+const url = require('url')
+
 
 /////////FILES
 
@@ -26,11 +28,60 @@ const http = require('http');
 // console.log('Will read file!')
 
 ////////SERVER
+const replaceTemplate = (temp, product) => {
+    let output = temp.replace(/{%PRODUCTNAME%}/g,product.productName);
+    output = output.replace(/{%PRICE%}/g,product.price);
+    output = output.replace(/{%IMAGE%}/g,product.image);
+    output = output.replace('{%FROM%}',product.from);
+    output = output.replace('{%NUTRIENTSNAME%}',product.nutrients);
+    output = output.replace('{%QUANTITY%}',product.quantity);
+    output = output.replace('{%DESC%}',product.description);
+    output = output.replace('{%ID%}',product.id);
+    
+    if (product.organic) output = output.replace('{%NOT_ORGANIC%}','not-organic');
+    return output
+}
+
+
+const tempOverview = fs.readFileSync(`${__dirname}/templates/template-overview.html`,'utf-8'); 
+const tempCard = fs.readFileSync(`${__dirname}/templates/template-card.html`,'utf-8'); 
+const tempProduct = fs.readFileSync(`${__dirname}/templates/template-product.html`,'utf-8'); 
+const data = fs.readFileSync(`${__dirname}/dev-data/data.json`,'utf-8'); 
+const dataObj = JSON.parse(data)
 
 const server = http.createServer((req, res) => {
-    res.statusCode = 202
-    console.log(res)
-    res.end('Hello from the server!')
+
+    const {query, pathname } = url.parse(req.url,true)
+    console.log('url '+ query.id)
+    console.log('jell')
+
+    // Overview
+    if(pathname==='/overview' || pathname === '/'){
+        res.writeHead(200,{'Content-type':'text/html'});
+        const cardsHtml = dataObj.map(el => 
+            replaceTemplate(tempCard, el) ).join('')
+        const output = tempOverview.replace('{%PRODUCT_CARDS%}',cardsHtml)
+        res.end(output)
+
+    //Product 
+    } else if (pathname==='/product') {
+        console.log(query.id)
+        const product = dataObj[query.id]
+        
+        const output = replaceTemplate(tempProduct,product)
+        res.end(output)
+    //API
+    }else if (pathname === '/api') {
+        res.writeHead(200,{'Content-type':'application/json'});
+        res.end(data);        
+    } else {
+        res.writeHead('404',{
+            'Content-type':'text/html',
+            'made-up-header': 'hello-world'
+        })
+        res.end('<h1>Cannot find</h1>')
+    }
+    // res.end('Hello from the server!')
 
 })
 
