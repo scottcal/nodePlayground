@@ -37,7 +37,7 @@ exports.getAllTours = (req, res) => {
   });
 };
 
-exports.getTour = (req, res) => {
+exports. getTour = (req, res) => {
   const id = req.params.id * 1;
   const tour = tours.find((el) => el.id === id);
 
